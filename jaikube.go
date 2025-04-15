@@ -2,16 +2,86 @@ package main
 
 import (
 	"fmt"
-	"os"
+	//"os"
 	"os/exec"
 	"strings"
+	"flag"
 )
 
 var colorOrange string = "\033[38;5;214m"
 var colorReset string = "\033[0m"
 
-func createNodes(MasterNodeList string, WorkerNodeList string) {
-	fmt.Println("create")
+func createNodes(serverNodeList string, agentNodeList string, configFile string) {
+
+	serverNodeArray := strings.Split(serverNodeList, ",")
+	agentNodeArray := strings.Split(agentNodeList, ",")
+
+	fmt.Println(colorOrange + "JaiKube: Starting server node configuration" + colorReset)
+
+
+	//initial server node configuration
+	fmt.Println(colorOrange + "JaiKube: Configuring server node: " + serverNodeArray[0] + colorReset)
+
+	//capture initial server node IP
+	out, err := exec.Command("limactl", "shell", serverNodeArray[0], "ip", "addr", "show", "lima0", "|", "grep", "\'inet \'", "|", "awk", "\'{print $2}\'", "cut", "-d/").CombinedOutput()
+	if err != nil {
+		fmt.Printf("%s", string(out))
+	} else {
+		fmt.Printf("%s", string(out))
+	}
+
+
+	return
+
+	//create server nodes
+	for _, node := range serverNodeArray {
+		fmt.Println(colorOrange + "JaiKube: Creating server node:" + node + colorReset)
+		out, err := exec.Command("limactl", "create", configFile, "--name="+node).CombinedOutput()
+		if err != nil {
+			fmt.Printf("%s", string(out))
+		} else {
+			fmt.Printf("%s", string(out))
+		}
+	}
+
+	//create agent nodes
+	for _, node := range agentNodeArray {
+		fmt.Println(colorOrange + "JaiKube: Creating agent node:" + node + colorReset)
+		out, err := exec.Command("limactl", "create", configFile, "--name="+node).CombinedOutput()
+		if err != nil {
+			fmt.Printf("%s", string(out))
+		} else {
+			fmt.Printf("%s", string(out))
+		}
+	}
+
+	//start server nodes
+	for _, node := range serverNodeArray {
+		fmt.Println(colorOrange + "JaiKube: Creating server node:" + node + colorReset)
+		out, err := exec.Command("limactl", "start", node).CombinedOutput()
+		if err != nil {
+			fmt.Printf("%s", string(out))
+		} else {
+			fmt.Printf("%s", string(out))
+		}
+	}
+	//start agent nodes
+	for _, node := range agentNodeArray {
+		fmt.Println(colorOrange + "JaiKube: Creating agent node:" + node + colorReset)
+		out, err := exec.Command("limactl", "start", node).CombinedOutput()
+		if err != nil {
+			fmt.Printf("%s", string(out))
+		} else {
+			fmt.Printf("%s", string(out))
+		}
+	}
+
+	//master node setup
+
+
+
+
+
 }
 
 func stopNodes(nodeList string) {
@@ -28,7 +98,6 @@ func stopNodes(nodeList string) {
 
 func deleteNodes(nodeList string) {
 	nodeNamesArray := strings.Split(nodeList, ",")
-
 	//stop nodes first
 	stopNodes(nodeList)
 
@@ -44,6 +113,7 @@ func deleteNodes(nodeList string) {
 
 func rebootNodes(nodeList string) {
 	nodeNamesArray := strings.Split(nodeList, ",")
+	//stop nodes
 	for _, node := range nodeNamesArray {
 		out, err := exec.Command("limactl", "stop", node).CombinedOutput()
 		if err != nil {
@@ -52,7 +122,7 @@ func rebootNodes(nodeList string) {
 			fmt.Printf("%s", string(out))
 		}
     }
-
+	//start nodes
 	for _, node := range nodeNamesArray {
 		out, err := exec.Command("limactl", "start", node).CombinedOutput()
 		if err != nil {
@@ -75,7 +145,7 @@ func listNodes() {
 func help() {
 	fmt.Printf("Commands:\n\n")
 	fmt.Printf("Create a cluster:\n")
-	fmt.Printf("	./jaikube create server,nodes agent,nodes\n\n")
+	fmt.Printf("	./jaikube create server,nodes agent,nodes configFile\n\n")
 	fmt.Printf("Start node(s):\n")
 	fmt.Printf("	./jaikube start nodes,list\n\n")
 	fmt.Printf("Stop node(s):\n")
@@ -105,34 +175,24 @@ func printLogo() {
 
 func main() {
     
-	
-	//argsWithProg := os.Args
-    //argsWithoutProg := os.Args[1:]
+	serverPtr := flag.String("server", "", "comma seperated string of server node names")
+	agentPtr := flag.String("agent", "", "comma seperated string of agent node names")
+	configPtr := flag.String("config", "", "lima configuration file")
+	nodePtr := flag.String("nodes", "" ,"comma seperated string of node names")
+	jobPrt := flag.String("job", "" ,"what function to run")
 
-	//key := os.Args[]
-
-	//check for null input
-	if len(os.Args) <= 1 {
-		printLogo()
-		help()
-		return
-	}
+	flag.Parse()
 
 	//check for JaiKube cluster operations
-	if os.Args[1] == "create" && len(os.Args) == 4 {
-		MasterNodeList := os.Args[2]
-		WorkerNodeList := os.Args[3]
-		createNodes(MasterNodeList, WorkerNodeList)
-	} else if os.Args[1] == "stop" && len(os.Args) == 3 {
-		nodeList := os.Args[2]
-		stopNodes(nodeList)
-	} else if os.Args[1] == "delete" && len(os.Args) == 3 {
-		nodeList := os.Args[2]
-		deleteNodes(nodeList)
-	} else if os.Args[1] == "reboot" && len(os.Args) == 3 {
-		nodeList := os.Args[2]
-		rebootNodes(nodeList)
-	} else if os.Args[1] == "list" {
+	if *jobPrt == "create" && (*serverPtr != "") && (*configPtr != "") {
+		createNodes(*serverPtr, *agentPtr, *configPtr)
+	} else if *jobPrt == "stop" && *nodePtr != "" {
+		stopNodes(*nodePtr)
+	} else if *jobPrt == "delete" && *nodePtr != "" {
+		deleteNodes(*nodePtr)
+	} else if *jobPrt == "delete" && *nodePtr != "" {
+		rebootNodes(*nodePtr)
+	} else if *jobPrt == "list" {
 		listNodes()
 	} else {
 		fmt.Println("Incorrect Arguments")
