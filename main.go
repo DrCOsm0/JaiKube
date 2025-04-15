@@ -108,7 +108,7 @@ func printLogo() {
         /\__|    |/ __ \|  |    |  \|  |  / \_\ \  ___/    
         \________(____  /__|____|__ \____/|___  /\___  >   
                       \/           \/         \/     \/    
-                         --Cluster Management, Made Easy
+                         -- Local Cluster Management, Made Easy
 
     Well Howdy, Welcome to JaiKube!
     ` + colorReset)
