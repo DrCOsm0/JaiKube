@@ -16,11 +16,8 @@ func createNodes(MasterNodeList string, WorkerNodeList string) {
 
 func stopNodes(nodeList string) {
 	nodeNamesArray := strings.Split(nodeList, ",")
-
 	for _, node := range nodeNamesArray {
-
 		out, err := exec.Command("limactl", "stop", node).CombinedOutput()
-
 		if err != nil {
 			fmt.Printf("%s", string(out))
 		} else {
@@ -36,9 +33,7 @@ func deleteNodes(nodeList string) {
 	stopNodes(nodeList)
 
 	for _, node := range nodeNamesArray {
-
 		out, err := exec.Command("limactl", "delete", node).CombinedOutput()
-
 		if err != nil {
 			fmt.Printf("%s", string(out))
 		} else {
@@ -49,11 +44,8 @@ func deleteNodes(nodeList string) {
 
 func rebootNodes(nodeList string) {
 	nodeNamesArray := strings.Split(nodeList, ",")
-
 	for _, node := range nodeNamesArray {
-
 		out, err := exec.Command("limactl", "stop", node).CombinedOutput()
-
 		if err != nil {
 			fmt.Printf("%s", string(out))
 		} else {
@@ -62,9 +54,7 @@ func rebootNodes(nodeList string) {
     }
 
 	for _, node := range nodeNamesArray {
-
 		out, err := exec.Command("limactl", "start", node).CombinedOutput()
-
 		if err != nil {
 			fmt.Printf("%s", string(out))
 		} else {
@@ -74,9 +64,7 @@ func rebootNodes(nodeList string) {
 }
 
 func listNodes() {
-
 	out, err := exec.Command("limactl", "list").Output()
-
 	if err != nil {
 		fmt.Println(err)
 	} else {
@@ -108,7 +96,7 @@ func printLogo() {
         /\__|    |/ __ \|  |    |  \|  |  / \_\ \  ___/    
         \________(____  /__|____|__ \____/|___  /\___  >   
                       \/           \/         \/     \/    
-                         -- Local Cluster Management, Made Easy
+                         --Cluster Management, Made Easy
 
     Well Howdy, Welcome to JaiKube!
     ` + colorReset)
