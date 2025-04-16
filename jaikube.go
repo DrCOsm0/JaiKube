@@ -19,23 +19,13 @@ func createNodes(serverNodeList string, agentNodeList string, configFile string)
 	fmt.Println(colorOrange + "JaiKube: Starting server node configuration" + colorReset)
 
 
-	//initial server node configuration
-	fmt.Println(colorOrange + "JaiKube: Configuring server node: " + serverNodeArray[0] + colorReset)
-
-	//capture initial server node IP
-	out, err := exec.Command("limactl", "shell", serverNodeArray[0], "ip", "addr", "show", "lima0", "|", "grep", "\'inet \'", "|", "awk", "\'{print $2}\'", "cut", "-d/").CombinedOutput()
-	if err != nil {
-		fmt.Printf("%s", string(out))
-	} else {
-		fmt.Printf("%s", string(out))
-	}
-
-
-	return
-
 	//create server nodes
 	for _, node := range serverNodeArray {
-		fmt.Println(colorOrange + "JaiKube: Creating server node:" + node + colorReset)
+		//check if server nodes is empty
+		if node == "" {
+			continue
+		}
+		fmt.Println(colorOrange + "JaiKube: Creating server node: " + node + colorReset)
 		out, err := exec.Command("limactl", "create", configFile, "--name="+node).CombinedOutput()
 		if err != nil {
 			fmt.Printf("%s", string(out))
@@ -43,10 +33,15 @@ func createNodes(serverNodeList string, agentNodeList string, configFile string)
 			fmt.Printf("%s", string(out))
 		}
 	}
+
 
 	//create agent nodes
 	for _, node := range agentNodeArray {
-		fmt.Println(colorOrange + "JaiKube: Creating agent node:" + node + colorReset)
+		//check if agent nodes is empty
+		if node == "" {
+			continue
+		}
+		fmt.Println(colorOrange + "JaiKube: Creating agent node: " + node + colorReset)
 		out, err := exec.Command("limactl", "create", configFile, "--name="+node).CombinedOutput()
 		if err != nil {
 			fmt.Printf("%s", string(out))
@@ -55,9 +50,14 @@ func createNodes(serverNodeList string, agentNodeList string, configFile string)
 		}
 	}
 
+
 	//start server nodes
 	for _, node := range serverNodeArray {
-		fmt.Println(colorOrange + "JaiKube: Creating server node:" + node + colorReset)
+		//check if server nodes is empty
+		if node == "" {
+			continue
+		}
+		fmt.Println(colorOrange + "JaiKube: Starting server node: " + node + colorReset)
 		out, err := exec.Command("limactl", "start", node).CombinedOutput()
 		if err != nil {
 			fmt.Printf("%s", string(out))
@@ -67,7 +67,11 @@ func createNodes(serverNodeList string, agentNodeList string, configFile string)
 	}
 	//start agent nodes
 	for _, node := range agentNodeArray {
-		fmt.Println(colorOrange + "JaiKube: Creating agent node:" + node + colorReset)
+		//check if server agent is empty
+		if node == "" {
+			continue
+		}
+		fmt.Println(colorOrange + "JaiKube: Starting agent node: " + node + colorReset)
 		out, err := exec.Command("limactl", "start", node).CombinedOutput()
 		if err != nil {
 			fmt.Printf("%s", string(out))
@@ -78,8 +82,27 @@ func createNodes(serverNodeList string, agentNodeList string, configFile string)
 
 	//master node setup
 
+	//initial server node configuration
+	fmt.Println(colorOrange + "JaiKube: Configuring server node: " + serverNodeArray[0] + colorReset)
 
+	//capture initial server node IP
+	command := fmt.Sprintf("limactl shell %s ip addr show lima0 | grep 'inet ' | awk '{print $2}' | cut -d/ -f1", serverNodeArray[0])
+	masterIP, err := exec.Command("bash", "-c", command).CombinedOutput()
+	if err != nil {
+		fmt.Printf("%s", string(masterIP))
+	}
 
+	//delete eth0 route
+	command = fmt.Sprintf("limactl shell %s sudo ip route del default dev eth0", serverNodeArray[0])
+	exec.Command("bash", "-c", command).CombinedOutput()
+
+	//install k3s server and set permissions for kubectl
+	command = fmt.Sprintf("limactl shell %s \"curl https://get.k3s.io | sh -s - server --write-kubeconfig-mode=644 --node-ip=%s --flannel-iface=lima0 --cluster-init\"", serverNodeArray[0], masterIP)
+	exec.Command("bash", "-c", command).CombinedOutput()
+	command = fmt.Sprintf("limactl shell %s sudo chmod 644 /etc/rancher/k3s/k3s.yaml", serverNodeArray[0])
+	exec.Command("bash", "-c", command).CombinedOutput()
+
+	//install helm and set up kubeconfig location for helm to use
 
 
 }
@@ -190,7 +213,7 @@ func main() {
 		stopNodes(*nodePtr)
 	} else if *jobPrt == "delete" && *nodePtr != "" {
 		deleteNodes(*nodePtr)
-	} else if *jobPrt == "delete" && *nodePtr != "" {
+	} else if *jobPrt == "reboot" && *nodePtr != "" {
 		rebootNodes(*nodePtr)
 	} else if *jobPrt == "list" {
 		listNodes()
